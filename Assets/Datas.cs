@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
-public class Datas : MonoBehaviour
+public class Datas
 {
     public int health;
 }

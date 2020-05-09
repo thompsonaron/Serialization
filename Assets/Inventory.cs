@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 [Serializable]
 public class Inventory
 {
-    Item[] items;
+    public Item[] items;
+    public List<Item> items2;
 }
