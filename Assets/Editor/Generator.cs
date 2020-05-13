@@ -12,14 +12,21 @@ public class Generator
     [MenuItem("Generator/Generate)")]
     public static void Generate()
     {
-        StringBuilder sb = new StringBuilder();
-        sb.AppendLine("using System.Collections.Generic;");
-        sb.AppendLine("using System.IO;");
-        sb.AppendLine(Environment.NewLine);
-        sb.AppendLine("public class Serializator");
-        sb.AppendLine("{");
-
         var types = System.AppDomain.CurrentDomain.GetAssemblies();
+
+        // serializator
+        StringBuilder sbSer = new StringBuilder();
+        sbSer.AppendLine("using System.Collections.Generic;");
+        sbSer.AppendLine("using System.IO;");
+        sbSer.AppendLine("using System;");
+        sbSer.AppendLine(Environment.NewLine);
+        sbSer.AppendLine("public class Serializator");
+        sbSer.AppendLine("{");
+
+
+        // deserializator
+        StringBuilder sbDeser = new StringBuilder();
+
         // getting all assemblies
         foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
         {
@@ -30,10 +37,20 @@ public class Generator
                 var assemblyClasses = assembly.GetTypes();
                 foreach (var classType in assemblyClasses)
                 {
-                    sb.AppendLine("byte[] serialize(" + classType.Name + " " + classType.Name.ToLower() + ")");
-                    sb.AppendLine("{");
-                    sb.AppendLine("var s = new MemoryStream();");
-                    sb.AppendLine("var bW = new BinaryWriter(s);");
+                    // serializator
+                    sbSer.AppendLine("public byte[] serialize(" + classType.Name + " " + classType.Name.ToLower() + ")");
+                    sbSer.AppendLine("{");
+                    sbSer.AppendLine("var s = new MemoryStream();");
+                    sbSer.AppendLine("var bW = new BinaryWriter(s);");
+
+
+                    //deserializator
+                    sbDeser.AppendLine();
+                    sbDeser.AppendLine("public " + classType.Name + " Deserialize" + classType.Name + " (byte[] b)");
+                    sbDeser.AppendLine("{");
+                    sbDeser.AppendLine("var s = new MemoryStream(b);");
+                    sbDeser.AppendLine("var bR = new BinaryReader(s);");
+                    sbDeser.AppendLine("var obj = new " + classType.Name + "();");
 
                     // getting all attributes in class
                     Attribute[] attrs = System.Attribute.GetCustomAttributes(classType);
@@ -49,44 +66,100 @@ public class Generator
                             {
                                 if (field.FieldType.IsList())
                                 {
+                                    // meaning if it is class from this project (editor clases are excluded above)
                                     bool existsInAssembly = ExistsInAssembly(assemblyClasses, field, CollectionType.List);
 
-                                    sb.AppendLine("bW.Write(" + classType.Name.ToLower() + "." + field.Name + ".Count);");
-                                    sb.AppendLine("foreach (var item in " + classType.Name.ToLower() + "." + field.Name + ")");
-                                    sb.AppendLine("{");
-                                    if (existsInAssembly) { sb.AppendLine("bW.Write(serialize(item));"); }
-                                    else { sb.AppendLine("bW.Write(item);"); }
-                                    sb.AppendLine("}");
+                                    // serializator
+                                    sbSer.AppendLine("bW.Write(" + classType.Name.ToLower() + "." + field.Name + ".Count);");
+                                    sbSer.AppendLine("foreach (var item in " + classType.Name.ToLower() + "." + field.Name + ")");
+                                    sbSer.AppendLine("{");
+                                    if (existsInAssembly) { sbSer.AppendLine("bW.Write(serialize(item));"); }
+                                    else { sbSer.AppendLine("bW.Write(item);"); }
+                                    sbSer.AppendLine("}");
+
+                                    // deserializator
+                                    string[] classNameSplit = field.FieldType.ToString().Split('[', ']');
+                                    string[] className = classNameSplit[1].Split('.');
+                                    
+                                    if (className.Length > 1) { sbDeser.AppendLine("obj." + field.Name + " = new List<" + className[1] + ">();"); }
+                                    else { sbDeser.AppendLine("obj." + field.Name + " = new List<" + className[0] + ">();"); }
+                                    sbDeser.AppendLine("int "+ field.Name  + "ListSize = bR.ReadInt32();");
+
+                                    sbDeser.AppendLine("for (int i = 0; i < " + field.Name + "ListSize; i++)");
+                                    sbDeser.AppendLine("{");
+                                    // meaning that field is "primitive"
+                                    if (className.Length > 1) { sbDeser.AppendLine("obj." + field.Name + ".Add(bR.Read" + className[1] + "());"); }
+                                    // meaning it is a class
+                                    else { sbDeser.AppendLine("obj." + field.Name + ".Add(Deserialize" + className[0] + "(b));"); }
+
+                                    sbDeser.AppendLine("}");
                                 }
                                 else if (field.FieldType.IsArray)
                                 {
                                     bool existsInAssembly = ExistsInAssembly(assemblyClasses, field, CollectionType.Array);
 
+                                    // serializator
                                     // Array Length
-                                    sb.AppendLine("bW.Write(" + classType.Name.ToLower() + "." + field.Name + ".Length);");
-                                    sb.AppendLine("foreach (var item in " + classType.Name.ToLower() + "." + field.Name + ")");
-                                    sb.AppendLine("{");
-                                    if (existsInAssembly) { sb.AppendLine("bW.Write(serialize(item));"); }
-                                    else { sb.AppendLine("bW.Write(item);"); }
-                                    sb.AppendLine("}");
+                                    sbSer.AppendLine("bW.Write(" + classType.Name.ToLower() + "." + field.Name + ".Length);");
+                                    sbSer.AppendLine("foreach (var item in " + classType.Name.ToLower() + "." + field.Name + ")");
+                                    sbSer.AppendLine("{");
+                                    if (existsInAssembly) { sbSer.AppendLine("bW.Write(serialize(item));"); }
+                                    else { sbSer.AppendLine("bW.Write(item);"); }
+                                    sbSer.AppendLine("}");
+
+                                    // deserializator
+                                    string[] classNameSplit = field.FieldType.ToString().Split('[');
+                                    string[] className = classNameSplit[0].Split('.');
+                                    sbDeser.AppendLine("int " + field.Name + "ArraySize = bR.ReadInt32();");
+                                    if (className.Length > 1) { sbDeser.AppendLine("obj." + field.Name + " = new " + className[1] + "["+ field.Name + "ArraySize];"); }
+                                    else { sbDeser.AppendLine("obj." + field.Name + " = new " + className[0] + "[" + field.Name + "ArraySize];"); }
+
+                                    sbDeser.AppendLine("for (int i = 0; i <" + field.Name + "ArraySize; i++)");
+                                    sbDeser.AppendLine("{");
+                                    // "primitive" class
+                                    if (className.Length > 1) { sbDeser.AppendLine("obj." + field.Name + "[i] = bR.Read" + className[1] + "();"); }
+                                    // a class
+                                    else { sbDeser.AppendLine("obj." + field.Name + "[i] = Deserialize" + className[0] + "(b);"); }
+                                    sbDeser.AppendLine("}");
+
                                 }
                                 else
                                 {
                                     bool existsInAssembly = ExistsInAssembly(assemblyClasses, field, CollectionType.None);
 
-                                    if (existsInAssembly) { sb.AppendLine("bW.Write(serialize(" + classType.Name.ToLower() + "." + field.Name + "));"); }
-                                    else { sb.AppendLine("bW.Write(" + classType.Name.ToLower() + "." + field.Name + ");"); }
+                                    // serializator
+                                    if (existsInAssembly) { sbSer.AppendLine("bW.Write(serialize(" + classType.Name.ToLower() + "." + field.Name + "));"); }
+                                    else { sbSer.AppendLine("bW.Write(" + classType.Name.ToLower() + "." + field.Name + ");"); }
+
+                                    // deserializator
+                                    // TODO might need reference ==> "(ref b)" instead of (b)
+                                    if (existsInAssembly) { sbDeser.AppendLine("obj." + field.Name + " = Deserialize" + field.FieldType + "(b);"); }
+                                    else
+                                    {
+                                        string[] fieldTypeSplit = field.FieldType.ToString().Split('.');
+                                        sbDeser.AppendLine("obj." + field.Name + " = bR.Read" + fieldTypeSplit[1] + "();");
+                                    }
                                 }
                             }
                         }
                     }
-                    sb.AppendLine("return s.ToArray();");
-                    sb.AppendLine("}");
+
+                    // serializator
+                    sbSer.AppendLine("return s.ToArray();");
+                    sbSer.AppendLine("}");
+                    
+                    // deserializator
+                    sbDeser.AppendLine("return obj;");
+                    sbDeser.AppendLine("}");
                 }
             }
         }
-        sb.AppendLine("}");
-        File.WriteAllText(Application.dataPath + "/Serializator.cs", sb.ToString());
+        // deserializator
+        sbSer.AppendLine(sbDeser.ToString());
+
+        // serializator
+        sbSer.AppendLine("}");
+        File.WriteAllText(Application.dataPath + "/Serializator.cs", sbSer.ToString());
     }
 
     private static bool ExistsInAssembly(Type[] assemblyClasses, FieldInfo field, CollectionType collectionType)

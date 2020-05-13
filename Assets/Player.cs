@@ -11,4 +11,5 @@ public class Player
     public Inventory inventory;
     public List<int> randomThings;
     public List<Player> rppl;
+    public int[] intrrppl;
 }
