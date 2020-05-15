@@ -41,8 +41,9 @@ public class Tester : MonoBehaviour
         inv.items2.Add(item4);
         inv.items2.Add(item5);
 
-        var streaminv = ser.serialize(inv);
 
+        // serializing -> deserializing
+        var streaminv = ser.serialize(inv);
         Inventory resolvedInv = ser.DeserializeInventory(streaminv);
 
         foreach (var obj in resolvedInv.items2)
@@ -66,17 +67,18 @@ public class Tester : MonoBehaviour
         p.rppl = new List<Inventory>();
         p.rppl.Add(inv);
 
+        // serializing -> deserializing
         var stream = ser.serialize(p);
-
         Player resolved = ser.DeserializePlayer(stream);
-        Debug.Log(p.hp);
-        Debug.Log(p.mana);
-        Debug.Log(p.arr);
-        Debug.Log(p.alive);
-        Debug.Log(p.inventory.items[0].name);
-        Debug.Log(p.randomThings[1]);
-        Debug.Log(p.intrrppl[1]);
-        Debug.Log(p.rppl[0].items[0].name);
+
+        Debug.Log(resolved.hp);
+        Debug.Log(resolved.mana);
+        Debug.Log(resolved.arr);
+        Debug.Log(resolved.alive);
+        Debug.Log(resolved.inventory.items[0].name);
+        Debug.Log(resolved.randomThings[1]);
+        Debug.Log(resolved.intrrppl[1]);
+        Debug.Log(resolved.rppl[0].items[0].name);
 
         
     }
