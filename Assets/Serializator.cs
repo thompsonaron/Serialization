@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System;
-using System.Diagnostics;
+
 
 public class Serializator
 {
@@ -26,7 +26,6 @@ public class Serializator
         {
             bW.Write(serialize(item));
         }
-        s.Close();
         return s.ToArray();
     }
     public byte[] serialize(Item item)
@@ -63,18 +62,6 @@ public class Serializator
         }
         return s.ToArray();
     }
-    public byte[] serialize(Serializator serializator)
-    {
-        var s = new MemoryStream();
-        var bW = new BinaryWriter(s);
-        return s.ToArray();
-    }
-    public byte[] serialize(Tester tester)
-    {
-        var s = new MemoryStream();
-        var bW = new BinaryWriter(s);
-        return s.ToArray();
-    }
 
     public Datas DeserializeDatas(byte[] b)
     {
@@ -94,7 +81,7 @@ public class Serializator
         obj.items = new Item[itemsArraySize];
         for (int i = 0; i < itemsArraySize; i++)
         {
-            obj.items[i] = DeserializeItem(ref b, ref s,ref bR);
+            obj.items[i] = DeserializeItem(ref b, ref s, ref bR);
         }
         obj.items2 = new List<Item>();
         int items2ListSize = bR.ReadInt32();
@@ -102,8 +89,6 @@ public class Serializator
         {
             obj.items2.Add(DeserializeItem(ref b, ref s, ref bR));
         }
-        s.Close();
-        bR.Close();
         return obj;
     }
 
@@ -114,18 +99,6 @@ public class Serializator
         var obj = new Item();
         obj.name = bR.ReadString();
         obj.amount = bR.ReadInt32();
-
-        return obj;
-    }
-
-    public Item DeserializeItem(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
-    {
-        //s = new MemoryStream(b);
-        //var bR = new BinaryReader(s);
-        var obj = new Item();
-        obj.name = bR.ReadString();
-        obj.amount = bR.ReadInt32();
-
         return obj;
     }
 
@@ -138,7 +111,7 @@ public class Serializator
         obj.mana = bR.ReadInt32();
         obj.arr = bR.ReadChar();
         obj.alive = bR.ReadBoolean();
-        obj.inventory = DeserializeInventory(b);
+        obj.inventory = DeserializeInventory(ref b, ref s, ref bR);
         obj.randomThings = new List<Int32>();
         int randomThingsListSize = bR.ReadInt32();
         for (int i = 0; i < randomThingsListSize; i++)
@@ -149,7 +122,7 @@ public class Serializator
         int rpplListSize = bR.ReadInt32();
         for (int i = 0; i < rpplListSize; i++)
         {
-            obj.rppl.Add(DeserializePlayer(b));
+            obj.rppl.Add(DeserializePlayer(ref b, ref s, ref bR));
         }
         int intrrpplArraySize = bR.ReadInt32();
         obj.intrrppl = new Int32[intrrpplArraySize];
@@ -160,19 +133,66 @@ public class Serializator
         return obj;
     }
 
-    public Serializator DeserializeSerializator(byte[] b)
+
+    public Datas DeserializeDatas(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
     {
-        var s = new MemoryStream(b);
-        var bR = new BinaryReader(s);
-        var obj = new Serializator();
+        var obj = new Datas();
+        obj.health = bR.ReadInt32();
         return obj;
     }
 
-    public Tester DeserializeTester(byte[] b)
+    public Inventory DeserializeInventory(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
     {
-        var s = new MemoryStream(b);
-        var bR = new BinaryReader(s);
-        var obj = new Tester();
+        var obj = new Inventory();
+        int itemsArraySize = bR.ReadInt32();
+        obj.items = new Item[itemsArraySize];
+        for (int i = 0; i < itemsArraySize; i++)
+        {
+            obj.items[i] = DeserializeItem(ref b, ref s, ref bR);
+        }
+        obj.items2 = new List<Item>();
+        int items2ListSize = bR.ReadInt32();
+        for (int i = 0; i < items2ListSize; i++)
+        {
+            obj.items2.Add(DeserializeItem(ref b, ref s, ref bR));
+        }
+        return obj;
+    }
+
+    public Item DeserializeItem(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
+    {
+        var obj = new Item();
+        obj.name = bR.ReadString();
+        obj.amount = bR.ReadInt32();
+        return obj;
+    }
+
+    public Player DeserializePlayer(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
+    {
+        var obj = new Player();
+        obj.hp = bR.ReadInt32();
+        obj.mana = bR.ReadInt32();
+        obj.arr = bR.ReadChar();
+        obj.alive = bR.ReadBoolean();
+        obj.inventory = DeserializeInventory(ref b, ref s, ref bR);
+        obj.randomThings = new List<Int32>();
+        int randomThingsListSize = bR.ReadInt32();
+        for (int i = 0; i < randomThingsListSize; i++)
+        {
+            obj.randomThings.Add(bR.ReadInt32());
+        }
+        obj.rppl = new List<Player>();
+        int rpplListSize = bR.ReadInt32();
+        for (int i = 0; i < rpplListSize; i++)
+        {
+            obj.rppl.Add(DeserializePlayer(ref b, ref s, ref bR));
+        }
+        int intrrpplArraySize = bR.ReadInt32();
+        obj.intrrppl = new Int32[intrrpplArraySize];
+        for (int i = 0; i < intrrpplArraySize; i++)
+        {
+            obj.intrrppl[i] = bR.ReadInt32();
+        }
         return obj;
     }
 

@@ -8,52 +8,13 @@ using UnityEngine;
 
 public class Tester : MonoBehaviour
 {
-    const string fileName = "AppSettings.dat";
-    // Start is called before the first frame update
     void Start()
     {
-        //BinaryWriter writer = new BinaryWriter(File.Open(fileName, FileMode.Create));
         Item item = new Item();
         item.amount = 2;
         item.name = "DItem";
-        //writer.Write(item.name);
-        //writer.Write(item.amount);
-        //writer.Close();
-
-        //  var s = new MemoryStream(10000);
-        //  BinaryWriter binaryWriter = new BinaryWriter(s);
-        //  string two = "two";
-        //  binaryWriter.Write(two);
-        ////  var blabla = new MemoryStream();
-        //  //    s.CopyTo(blabla);
-        //  ////binaryWriter.Write(item.amount);
-        //  //binaryWriter.Close();
-        //  //s.Close();
-
-        //  BinaryReader binaryReader = new BinaryReader(s);
-        //  string twoRead = binaryReader.ReadString();
-        //  Debug.Log(twoRead);
-        //  // Debug.Log(binaryReader.ReadInt32());
-        //  //binaryReader.Close();
-
-        //BinaryReader reader = new BinaryReader(File.Open(fileName, FileMode.Open));
-        //string name = reader.ReadString();
-        //int num = reader.ReadInt32();
-
-        //Debug.Log(name);
-        //Debug.Log(num);
-
-        //Serializator ser = new Serializator();
-        //var t = ser.serialize(item);
 
 
-        //MemoryStream mm = new MemoryStream(t);
-
-        //BinaryReader rr = new BinaryReader(mm);
-        //string ff = rr.ReadString();
-        //int aa = rr.ReadInt32();
-        //Debug.Log(ff);
-        //Debug.Log(aa);
         Serializator ser = new Serializator();
 
         Item item1 = new Item();
@@ -79,27 +40,19 @@ public class Tester : MonoBehaviour
         inv.items2.Add(item3);
         inv.items2.Add(item4);
         inv.items2.Add(item5);
+
         var stream = ser.serialize(inv);
+
         Inventory resolved = ser.DeserializeInventory(stream);
 
         foreach (var obj in resolved.items2)
         {
-            Debug.Log(obj.name);
+            Debug.Log(obj.name+ " " + obj.amount);
         }
 
-        //Debug.Log(resolved.amount + resolved.name);
-        //Item sol = new Item();
-        //var s = new MemoryStream(stream);
-        //var bR = new BinaryReader(s);
-        //var obj = new Item();
-        //sol.name = bR.ReadString();
-        //sol.amount = bR.ReadInt32();
+
 
     }
 
-    // Update is called once per frame
-    void Update()
-    {
 
-    }
 }
