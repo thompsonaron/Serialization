@@ -1,5 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.Reflection;
@@ -12,9 +11,7 @@ public class Generator
     [MenuItem("Generator/Generate)")]
     public static void Generate()
     {
-        var types = System.AppDomain.CurrentDomain.GetAssemblies();
-
-        // serializator
+        // serializator class using namespaces
         StringBuilder sbSer = new StringBuilder();
         sbSer.AppendLine("using System.Collections.Generic;");
         sbSer.AppendLine("using System.IO;");
@@ -23,11 +20,9 @@ public class Generator
         sbSer.AppendLine("public class Serializator");
         sbSer.AppendLine("{");
 
-
-        // deserializator
+        // deserializator sb
         StringBuilder sbDeser = new StringBuilder();
-
-        // deserializator ref
+        // deserializator inner methods sb
         StringBuilder sbDeserRef = new StringBuilder();
 
         // getting all assemblies
@@ -36,42 +31,40 @@ public class Generator
             // narrowing to desired assemblies
             if (assembly.FullName.Contains("CSharp") && !assembly.FullName.Contains("Editor"))
             {
-                // alll classes in assembly
+                // all classes in assembly
                 var assemblyClasses = assembly.GetTypes();
                 foreach (var classType in assemblyClasses)
                 {
-
-                    // getting all attributes in class
+                    // getting all attributes from a class
                     Attribute[] attrs = System.Attribute.GetCustomAttributes(classType);
                     for (int i = 0; i < attrs.Length; i++)
                     {
                         //if attribute is [Serializable] => do stuff
                         if (attrs[i] is SerializableAttribute)
                         {
-                            // serializator
+                            // SERIALIZATOR function declarations
                             sbSer.AppendLine("public byte[] serialize(" + classType.Name + " " + classType.Name.ToLower() + ")");
                             sbSer.AppendLine("{");
                             sbSer.AppendLine("var s = new MemoryStream();");
                             sbSer.AppendLine("var bW = new BinaryWriter(s);");
 
-
-                            //deserializator
-                            sbDeser.AppendLine();
+                            // DESERIALIZATOR function declarations
                             sbDeser.AppendLine("public " + classType.Name + " Deserialize" + classType.Name + " (byte[] b)");
                             sbDeser.AppendLine("{");
                             sbDeser.AppendLine("var s = new MemoryStream(b);");
                             sbDeser.AppendLine("var bR = new BinaryReader(s);");
                             sbDeser.AppendLine("var obj = new " + classType.Name + "();");
 
-                            // deserializator ref
-                            sbDeserRef.AppendLine();
-                            sbDeserRef.AppendLine("public " + classType.Name + " Deserialize" + classType.Name + " (ref byte[] b, ref MemoryStream s, ref BinaryReader bR)");
+                            // DESERIALIZATOR inner function declarations
+                            sbDeserRef.AppendLine("private " + classType.Name + " Deserialize" + classType.Name + " (ref byte[] b, ref MemoryStream s, ref BinaryReader bR)");
                             sbDeserRef.AppendLine("{");
                             sbDeserRef.AppendLine("var obj = new " + classType.Name + "();");
-                            Debug.Log(classType.Name);
-                            // will get all types of fields with binding flags - without it, it will ONLY get PUBLIC fields
+
+                            // BindingFlags are NOT USED
+                            // TODO bindingFlags will get all types of fields with binding flags - without it, it will ONLY get PUBLIC fields
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
                             var fields = classType.GetFields(bindingFlags);
+
                             foreach (var field in classType.GetFields())
                             {
                                 if (field.FieldType.IsList())
@@ -79,98 +72,127 @@ public class Generator
                                     // meaning if it is class from this project (editor clases are excluded above)
                                     bool existsInAssembly = ExistsInAssembly(assemblyClasses, field, CollectionType.List);
 
-                                    // serializator
+                                    // SERIALIZATOR
+                                    // serializator - writing list count and each item
                                     sbSer.AppendLine("bW.Write(" + classType.Name.ToLower() + "." + field.Name + ".Count);");
                                     sbSer.AppendLine("foreach (var item in " + classType.Name.ToLower() + "." + field.Name + ")");
                                     sbSer.AppendLine("{");
+                                    // if item is a  class
                                     if (existsInAssembly) { sbSer.AppendLine("bW.Write(serialize(item));"); }
+                                    // if item is a primitive or a string
                                     else { sbSer.AppendLine("bW.Write(item);"); }
                                     sbSer.AppendLine("}");
 
-                                    // deserializator
+                                    // DESERIALIZATOR and deserializator inner functions
+                                    // extracts class name from list
                                     string[] classNameSplit = field.FieldType.ToString().Split('[', ']');
+                                    // separates class name IF it has '.' - meaning it is one of System classes
                                     string[] className = classNameSplit[1].Split('.');
 
+                                    // initalizing a list with primitive or a class
+                                    // init primitive
                                     if (className.Length > 1)
                                     {
-                                        sbDeser.AppendLine("obj." + field.Name + " = new List<" + className[1] + ">();");
-                                        sbDeserRef.AppendLine("obj." + field.Name + " = new List<" + className[1] + ">();");
+                                        string primitiveInit = "obj." + field.Name + " = new List<" + className[1] + ">();";
+                                        sbDeser.AppendLine(primitiveInit);
+                                        sbDeserRef.AppendLine(primitiveInit);
                                     }
+                                    // init class
                                     else
                                     {
-                                        sbDeser.AppendLine("obj." + field.Name + " = new List<" + className[0] + ">();");
-                                        sbDeserRef.AppendLine("obj." + field.Name + " = new List<" + className[0] + ">();");
+                                        string classInit = "obj." + field.Name + " = new List<" + className[0] + ">();";
+                                        sbDeser.AppendLine(classInit);
+                                        sbDeserRef.AppendLine(classInit);
                                     }
-                                    sbDeser.AppendLine("int " + field.Name + "ListSize = bR.ReadInt32();");
-                                    sbDeserRef.AppendLine("int " + field.Name + "ListSize = bR.ReadInt32();");
 
-                                    sbDeser.AppendLine("for (int i = 0; i < " + field.Name + "ListSize; i++)");
-                                    sbDeserRef.AppendLine("for (int i = 0; i < " + field.Name + "ListSize; i++)");
+                                    // reading list size
+                                    string readListSize = "int " + field.Name + "ListSize = bR.ReadInt32();";
+                                    sbDeser.AppendLine(readListSize);
+                                    sbDeserRef.AppendLine(readListSize);
+
+                                    // setting for loop for both starting and inner functions 
+                                    string forLoopDeclaration = "for (int i = 0; i < " + field.Name + "ListSize; i++)";
+                                    sbDeser.AppendLine(forLoopDeclaration);
+                                    sbDeserRef.AppendLine(forLoopDeclaration);
                                     sbDeser.AppendLine("{");
                                     sbDeserRef.AppendLine("{");
-                                    // meaning that field is "primitive"
+                                    // field is "primitive"
                                     if (className.Length > 1)
                                     {
-                                        sbDeser.AppendLine("obj." + field.Name + ".Add(bR.Read" + className[1] + "());");
-                                        sbDeserRef.AppendLine("obj." + field.Name + ".Add(bR.Read" + className[1] + "());");
+                                        string primitiveValue = "obj." + field.Name + ".Add(bR.Read" + className[1] + "());";
+                                        sbDeser.AppendLine(primitiveValue);
+                                        sbDeserRef.AppendLine(primitiveValue);
                                     }
-                                    // meaning it is a class
+                                    // field is a class
                                     else
                                     {
-                                        sbDeser.AppendLine("obj." + field.Name + ".Add(Deserialize" + className[0] + "(ref b, ref s,ref bR));");
-                                        sbDeserRef.AppendLine("obj." + field.Name + ".Add(Deserialize" + className[0] + "(ref b, ref s,ref bR));");
+                                        string classValue = "obj." + field.Name + ".Add(Deserialize" + className[0] + "(ref b, ref s,ref bR));";
+                                        sbDeser.AppendLine(classValue);
+                                        sbDeserRef.AppendLine(classValue);
                                     }
 
                                     sbDeser.AppendLine("}");
                                     sbDeserRef.AppendLine("}");
-
-                                    // deserializator reference
-
                                 }
                                 else if (field.FieldType.IsArray)
                                 {
                                     bool existsInAssembly = ExistsInAssembly(assemblyClasses, field, CollectionType.Array);
 
-                                    // serializator
+                                    // SERIALIZATOR
                                     // Array Length
                                     sbSer.AppendLine("bW.Write(" + classType.Name.ToLower() + "." + field.Name + ".Length);");
+                                    // foreach declaration
                                     sbSer.AppendLine("foreach (var item in " + classType.Name.ToLower() + "." + field.Name + ")");
                                     sbSer.AppendLine("{");
+                                    // if item is a class
                                     if (existsInAssembly) { sbSer.AppendLine("bW.Write(serialize(item));"); }
+                                    // if item is a primitive
                                     else { sbSer.AppendLine("bW.Write(item);"); }
                                     sbSer.AppendLine("}");
 
-                                    // deserializator
+                                    // DESERIALIZATOR and deserializator inner functions
+                                    // extracts class name from list
                                     string[] classNameSplit = field.FieldType.ToString().Split('[');
+                                    // separates class name IF it has '.' - meaning it is one of System classes
                                     string[] className = classNameSplit[0].Split('.');
-                                    sbDeser.AppendLine("int " + field.Name + "ArraySize = bR.ReadInt32();");
-                                    sbDeserRef.AppendLine("int " + field.Name + "ArraySize = bR.ReadInt32();");
+
+                                    // setting array size
+                                    string arraySize = "int " + field.Name + "ArraySize = bR.ReadInt32();";
+                                    sbDeser.AppendLine(arraySize);
+                                    sbDeserRef.AppendLine(arraySize);
+                                    // initilization if type is a primitive
                                     if (className.Length > 1)
                                     {
-                                        sbDeser.AppendLine("obj." + field.Name + " = new " + className[1] + "[" + field.Name + "ArraySize];");
-                                        sbDeserRef.AppendLine("obj." + field.Name + " = new " + className[1] + "[" + field.Name + "ArraySize];");
+                                        string primitiveInit = "obj." + field.Name + " = new " + className[1] + "[" + field.Name + "ArraySize];";
+                                        sbDeser.AppendLine(primitiveInit);
+                                        sbDeserRef.AppendLine(primitiveInit);
                                     }
+                                    // initilization if type is a class
                                     else
                                     {
-                                        sbDeser.AppendLine("obj." + field.Name + " = new " + className[0] + "[" + field.Name + "ArraySize];");
-                                        sbDeserRef.AppendLine("obj." + field.Name + " = new " + className[0] + "[" + field.Name + "ArraySize];");
+                                        string classInit = "obj." + field.Name + " = new " + className[0] + "[" + field.Name + "ArraySize];";
+                                        sbDeser.AppendLine(classInit);
+                                        sbDeserRef.AppendLine(classInit);
                                     }
 
-                                    sbDeser.AppendLine("for (int i = 0; i <" + field.Name + "ArraySize; i++)");
-                                    sbDeserRef.AppendLine("for (int i = 0; i <" + field.Name + "ArraySize; i++)");
+                                    string forLoopDeclaration = "for (int i = 0; i <" + field.Name + "ArraySize; i++)";
+                                    sbDeser.AppendLine(forLoopDeclaration);
+                                    sbDeserRef.AppendLine(forLoopDeclaration);
                                     sbDeser.AppendLine("{");
                                     sbDeserRef.AppendLine("{");
-                                    // "primitive" class
+                                    // reading a primitive value
                                     if (className.Length > 1)
                                     {
-                                        sbDeser.AppendLine("obj." + field.Name + "[i] = bR.Read" + className[1] + "();");
-                                        sbDeserRef.AppendLine("obj." + field.Name + "[i] = bR.Read" + className[1] + "();");
+                                        string primitiveRead = "obj." + field.Name + "[i] = bR.Read" + className[1] + "();";
+                                        sbDeser.AppendLine(primitiveRead);
+                                        sbDeserRef.AppendLine(primitiveRead);
                                     }
-                                    // a class
+                                    // reading a class value
                                     else
                                     {
-                                        sbDeser.AppendLine("obj." + field.Name + "[i] = Deserialize" + className[0] + "(ref b, ref s, ref bR);");
-                                        sbDeserRef.AppendLine("obj." + field.Name + "[i] = Deserialize" + className[0] + "(ref b, ref s, ref bR);");
+                                        string classRead = "obj." + field.Name + "[i] = Deserialize" + className[0] + "(ref b, ref s, ref bR);";
+                                        sbDeser.AppendLine(classRead);
+                                        sbDeserRef.AppendLine(classRead);
                                     }
                                     sbDeser.AppendLine("}");
                                     sbDeserRef.AppendLine("}");
@@ -184,18 +206,23 @@ public class Generator
                                     if (existsInAssembly) { sbSer.AppendLine("bW.Write(serialize(" + classType.Name.ToLower() + "." + field.Name + "));"); }
                                     else { sbSer.AppendLine("bW.Write(" + classType.Name.ToLower() + "." + field.Name + ");"); }
 
-                                    // deserializator
-                                    // TODO might need reference ==> "(ref b)" instead of (b)
+                                    // deserializator private function call
                                     if (existsInAssembly)
                                     {
-                                        sbDeser.AppendLine("obj." + field.Name + " = Deserialize" + field.FieldType + "(ref b, ref s, ref bR);");
-                                        sbDeserRef.AppendLine("obj." + field.Name + " = Deserialize" + field.FieldType + "(ref b, ref s, ref bR);");
+                                        string classRead = "obj." + field.Name + " = Deserialize" + field.FieldType + "(ref b, ref s, ref bR);";
+                                        // deserializing a class
+                                        sbDeser.AppendLine(classRead);
+                                        sbDeserRef.AppendLine(classRead);
                                     }
+                                    // deserializator public function call
                                     else
                                     {
+                                        // split, after FieldType is read, will do something along splitting System.Int32 and putting System on pos 0 and Int32 on pos 1
                                         string[] fieldTypeSplit = field.FieldType.ToString().Split('.');
-                                        sbDeser.AppendLine("obj." + field.Name + " = bR.Read" + fieldTypeSplit[1] + "();");
-                                        sbDeserRef.AppendLine("obj." + field.Name + " = bR.Read" + fieldTypeSplit[1] + "();");
+                                        // deserializing primitive
+                                        string primitiveRead = "obj." + field.Name + " = bR.Read" + fieldTypeSplit[1] + "();";
+                                        sbDeser.AppendLine(primitiveRead);
+                                        sbDeserRef.AppendLine(primitiveRead);
                                     }
                                 }
                             }
@@ -203,7 +230,7 @@ public class Generator
                             sbSer.AppendLine("return s.ToArray();");
                             sbSer.AppendLine("}");
 
-                            // deserializator
+                            // deserializator public and private
                             sbDeser.AppendLine("return obj;");
                             sbDeserRef.AppendLine("return obj;");
                             sbDeser.AppendLine("}");
@@ -214,15 +241,16 @@ public class Generator
                 }
             }
         }
-        // deserializator
+        // deserializator injection
         sbSer.AppendLine(sbDeser.ToString());
 
-        // deserializator reference
+        // deserializator private function injectioin
         sbSer.AppendLine(sbDeserRef.ToString());
 
         // serializator
         sbSer.AppendLine("}");
         File.WriteAllText(Application.dataPath + "/Serializator.cs", sbSer.ToString());
+        AssetDatabase.Refresh();
     }
 
     private static bool ExistsInAssembly(Type[] assemblyClasses, FieldInfo field, CollectionType collectionType)

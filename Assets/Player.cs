@@ -10,6 +10,6 @@ public class Player
     public bool alive;
     public Inventory inventory;
     public List<int> randomThings;
-    public List<Player> rppl;
+    public List<Inventory> rppl;
     public int[] intrrppl;
 }

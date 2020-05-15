@@ -41,17 +41,44 @@ public class Tester : MonoBehaviour
         inv.items2.Add(item4);
         inv.items2.Add(item5);
 
-        var stream = ser.serialize(inv);
+        var streaminv = ser.serialize(inv);
 
-        Inventory resolved = ser.DeserializeInventory(stream);
+        Inventory resolvedInv = ser.DeserializeInventory(streaminv);
 
-        foreach (var obj in resolved.items2)
+        foreach (var obj in resolvedInv.items2)
         {
-            Debug.Log(obj.name+ " " + obj.amount);
+            Debug.Log(obj.name + " " + obj.amount);
         }
 
+        Player p = new Player();
+        p.hp = 10;
+        p.mana = 20;
+        p.arr = 'a';
+        p.alive = true;
+        p.inventory = inv;
+        p.randomThings = new List<int>();
+        p.randomThings.Add(123);
+        p.randomThings.Add(1234);
+        p.intrrppl =  new int[2];
+        p.intrrppl[0] = 7;
+        p.intrrppl[1] = 1;
 
+        p.rppl = new List<Inventory>();
+        p.rppl.Add(inv);
 
+        var stream = ser.serialize(p);
+
+        Player resolved = ser.DeserializePlayer(stream);
+        Debug.Log(p.hp);
+        Debug.Log(p.mana);
+        Debug.Log(p.arr);
+        Debug.Log(p.alive);
+        Debug.Log(p.inventory.items[0].name);
+        Debug.Log(p.randomThings[1]);
+        Debug.Log(p.intrrppl[1]);
+        Debug.Log(p.rppl[0].items[0].name);
+
+        
     }
 
 
