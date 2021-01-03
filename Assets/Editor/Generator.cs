@@ -247,6 +247,22 @@ public class Generator
         // deserializator private function injectioin
         sbSer.AppendLine(sbDeserRef.ToString());
 
+        // CUSTOM direct single string serializator
+        sbSer.AppendLine("public static byte[] serialize(string stringdata)");
+        sbSer.AppendLine("{");
+        sbSer.AppendLine("var s = new MemoryStream();");
+        sbSer.AppendLine("var bW = new BinaryWriter(s);");
+        sbSer.AppendLine("bW.Write(stringdata);");
+        sbSer.AppendLine( "return s.ToArray();");
+        sbSer.AppendLine("}");
+
+        sbSer.AppendLine("public static string DeserializeString(byte[] b)");
+        sbSer.AppendLine("{");
+        sbSer.AppendLine("var s = new MemoryStream(b);");
+        sbSer.AppendLine("var bR = new BinaryReader(s);");
+        sbSer.AppendLine(" return bR.ReadString();");
+        sbSer.AppendLine("}");
+
         // serializator
         sbSer.AppendLine("}");
         File.WriteAllText(Application.dataPath + "/Serializator.cs", sbSer.ToString());
