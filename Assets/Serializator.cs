@@ -3,16 +3,16 @@ using System.IO;
 using System;
 
 
-public class Serializator
+public static class Serializator
 {
-    public byte[] serialize(Datas datas)
+    public static byte[] serialize(Datas datas)
     {
         var s = new MemoryStream();
         var bW = new BinaryWriter(s);
         bW.Write(datas.health);
         return s.ToArray();
     }
-    public byte[] serialize(Inventory inventory)
+    public static byte[] serialize(Inventory inventory)
     {
         var s = new MemoryStream();
         var bW = new BinaryWriter(s);
@@ -28,7 +28,7 @@ public class Serializator
         }
         return s.ToArray();
     }
-    public byte[] serialize(Item item)
+    public static byte[] serialize(Item item)
     {
         var s = new MemoryStream();
         var bW = new BinaryWriter(s);
@@ -36,7 +36,7 @@ public class Serializator
         bW.Write(item.amount);
         return s.ToArray();
     }
-    public byte[] serialize(Player player)
+    public static byte[] serialize(Player player)
     {
         var s = new MemoryStream();
         var bW = new BinaryWriter(s);
@@ -62,7 +62,7 @@ public class Serializator
         }
         return s.ToArray();
     }
-    public Datas DeserializeDatas(byte[] b)
+    public static Datas DeserializeDatas(byte[] b)
     {
         var s = new MemoryStream(b);
         var bR = new BinaryReader(s);
@@ -70,7 +70,7 @@ public class Serializator
         obj.health = bR.ReadInt32();
         return obj;
     }
-    public Inventory DeserializeInventory(byte[] b)
+    public static Inventory DeserializeInventory(byte[] b)
     {
         var s = new MemoryStream(b);
         var bR = new BinaryReader(s);
@@ -89,7 +89,7 @@ public class Serializator
         }
         return obj;
     }
-    public Item DeserializeItem(byte[] b)
+    public static Item DeserializeItem(byte[] b)
     {
         var s = new MemoryStream(b);
         var bR = new BinaryReader(s);
@@ -98,7 +98,7 @@ public class Serializator
         obj.amount = bR.ReadInt32();
         return obj;
     }
-    public Player DeserializePlayer(byte[] b)
+    public static Player DeserializePlayer(byte[] b)
     {
         var s = new MemoryStream(b);
         var bR = new BinaryReader(s);
@@ -129,13 +129,13 @@ public class Serializator
         return obj;
     }
 
-    private Datas DeserializeDatas(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
+    private static Datas DeserializeDatas(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
     {
         var obj = new Datas();
         obj.health = bR.ReadInt32();
         return obj;
     }
-    private Inventory DeserializeInventory(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
+    private static Inventory DeserializeInventory(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
     {
         var obj = new Inventory();
         int itemsArraySize = bR.ReadInt32();
@@ -152,14 +152,14 @@ public class Serializator
         }
         return obj;
     }
-    private Item DeserializeItem(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
+    private static Item DeserializeItem(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
     {
         var obj = new Item();
         obj.name = bR.ReadString();
         obj.amount = bR.ReadInt32();
         return obj;
     }
-    private Player DeserializePlayer(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
+    private static Player DeserializePlayer(ref byte[] b, ref MemoryStream s, ref BinaryReader bR)
     {
         var obj = new Player();
         obj.hp = bR.ReadInt32();

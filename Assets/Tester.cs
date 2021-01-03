@@ -15,7 +15,7 @@ public class Tester : MonoBehaviour
         item.name = "DItem";
 
 
-        Serializator ser = new Serializator();
+
 
         Item item1 = new Item();
         item1.amount = 2;
@@ -43,8 +43,8 @@ public class Tester : MonoBehaviour
 
 
         // serializing -> deserializing
-        var streaminv = ser.serialize(inv);
-        Inventory resolvedInv = ser.DeserializeInventory(streaminv);
+        var streaminv = Serializator.serialize(inv);
+        Inventory resolvedInv = Serializator.DeserializeInventory(streaminv);
 
         foreach (var obj in resolvedInv.items2)
         {
@@ -68,8 +68,8 @@ public class Tester : MonoBehaviour
         p.rppl.Add(inv);
 
         // serializing -> deserializing
-        var stream = ser.serialize(p);
-        Player resolved = ser.DeserializePlayer(stream);
+        var stream = Serializator.serialize(p);
+        Player resolved = Serializator.DeserializePlayer(stream);
 
         Debug.Log(resolved.hp);
         Debug.Log(resolved.mana);

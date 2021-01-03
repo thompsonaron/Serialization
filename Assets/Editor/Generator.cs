@@ -8,7 +8,7 @@ using System.Text;
 
 public class Generator
 {
-    [MenuItem("Generator/Generate)")]
+    [MenuItem("Generator/Generate")]
     public static void Generate()
     {
         // serializator class using namespaces
@@ -17,7 +17,7 @@ public class Generator
         sbSer.AppendLine("using System.IO;");
         sbSer.AppendLine("using System;");
         sbSer.AppendLine(Environment.NewLine);
-        sbSer.AppendLine("public class Serializator");
+        sbSer.AppendLine("public static class Serializator");
         sbSer.AppendLine("{");
 
         // deserializator sb
@@ -43,20 +43,20 @@ public class Generator
                         if (attrs[i] is SerializableAttribute)
                         {
                             // SERIALIZATOR function declarations
-                            sbSer.AppendLine("public byte[] serialize(" + classType.Name + " " + classType.Name.ToLower() + ")");
+                            sbSer.AppendLine("public static byte[] serialize(" + classType.Name + " " + classType.Name.ToLower() + ")");
                             sbSer.AppendLine("{");
                             sbSer.AppendLine("var s = new MemoryStream();");
                             sbSer.AppendLine("var bW = new BinaryWriter(s);");
 
                             // DESERIALIZATOR function declarations
-                            sbDeser.AppendLine("public " + classType.Name + " Deserialize" + classType.Name + " (byte[] b)");
+                            sbDeser.AppendLine("public static " + classType.Name + " Deserialize" + classType.Name + " (byte[] b)");
                             sbDeser.AppendLine("{");
                             sbDeser.AppendLine("var s = new MemoryStream(b);");
                             sbDeser.AppendLine("var bR = new BinaryReader(s);");
                             sbDeser.AppendLine("var obj = new " + classType.Name + "();");
 
                             // DESERIALIZATOR inner function declarations
-                            sbDeserRef.AppendLine("private " + classType.Name + " Deserialize" + classType.Name + " (ref byte[] b, ref MemoryStream s, ref BinaryReader bR)");
+                            sbDeserRef.AppendLine("private static " + classType.Name + " Deserialize" + classType.Name + " (ref byte[] b, ref MemoryStream s, ref BinaryReader bR)");
                             sbDeserRef.AppendLine("{");
                             sbDeserRef.AppendLine("var obj = new " + classType.Name + "();");
 
